@@ -69,11 +69,22 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
   // You'll need the arm length parameter L, and the drag/thrust ratio kappa
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  float c_bar = L * kappa * collThrustCmd;
+  float p_bar = kappa * momentCmd.x;
+  float q_bar = kappa * momentCmd.y;
+  float r_bar = -L * momentCmd.z;
 
-  cmd.desiredThrustsN[0] = mass * 9.81f / 4.f; // front left
-  cmd.desiredThrustsN[1] = mass * 9.81f / 4.f; // front right
-  cmd.desiredThrustsN[2] = mass * 9.81f / 4.f; // rear left
-  cmd.desiredThrustsN[3] = mass * 9.81f / 4.f; // rear right
+  cmd.desiredThrustsN[0] = (c_bar + p_bar + q_bar + r_bar) / (L * kappa * 4.0f); // front left
+  cmd.desiredThrustsN[1] = (c_bar - p_bar + q_bar - r_bar) / (L * kappa * 4.0f); // front right
+  cmd.desiredThrustsN[3] = (c_bar - p_bar - q_bar + r_bar) / (L * kappa * 4.0f); // rear left
+  cmd.desiredThrustsN[2] = (c_bar + p_bar - q_bar - r_bar) / (L * kappa * 4.0f); // rear right
+  
+  /*
+  cmd.desiredThrustsN[0] = mass * 9.81f / 4.0f; // front left
+  cmd.desiredThrustsN[1] = mass * 9.81f / 4.0f; // front right
+  cmd.desiredThrustsN[2] = mass * 9.81f / 4.0f; // rear left
+  cmd.desiredThrustsN[3] = mass * 9.81f / 4.0f; // rear right
+  */
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -97,8 +108,13 @@ V3F QuadControl::BodyRateControl(V3F pqrCmd, V3F pqr)
   V3F momentCmd;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  V3F pqrError = pqrCmd - pqr;
 
-  
+  V3F u_bar_p = kpPQR * pqrError;
+
+  momentCmd.x = u_bar_p.x * Ixx;
+  momentCmd.y = u_bar_p.y * Iyy;
+  momentCmd.z = u_bar_p.z * Izz;
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -128,8 +144,18 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
   Mat3x3F R = attitude.RotationMatrix_IwrtB();
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  float c_d = collThrustCmd / mass;
 
+  // how to get b_c_x and b_a_x
+  float target_R13 = accelCmd.x / c_d;
+  float target_R23 = accelCmd.y / c_d;
 
+  float rate_R13 = kpBank * (target_R13 - R(0, 2));
+  float rate_R23 = kpBank * (target_R23 - R(1, 2));
+
+  pqrCmd.x = ((R(1, 0) * rate_R13 - R(0, 0) * rate_R23) / R(2, 2));
+  pqrCmd.y = ((R(1, 1) * rate_R13 - R(0, 1) * rate_R23) / R(2, 2));
+  pqrCmd.z = 0.0f;
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
