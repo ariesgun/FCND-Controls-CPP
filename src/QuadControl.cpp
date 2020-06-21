@@ -150,12 +150,38 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
   float target_R13 = accelCmd.x / c_d;
   float target_R23 = accelCmd.y / c_d;
 
-  float rate_R13 = kpBank * (target_R13 - R(0, 2));
-  float rate_R23 = kpBank * (target_R23 - R(1, 2));
+  printf("Target R_13 %f %f\n", target_R13, target_R23);
 
-  pqrCmd.x = ((R(1, 0) * rate_R13 - R(0, 0) * rate_R23) / R(2, 2));
-  pqrCmd.y = ((R(1, 1) * rate_R13 - R(0, 1) * rate_R23) / R(2, 2));
-  pqrCmd.z = 0.0f;
+  if (collThrustCmd > 0.0f)
+  {
+    if (target_R13 > maxTiltAngle) {
+      target_R13 = maxTiltAngle;
+    }
+    else if (target_R13 < -maxTiltAngle) {
+      target_R13 = -maxTiltAngle;
+    }
+
+    if (target_R23 > maxTiltAngle) {
+      target_R23 = maxTiltAngle;
+    }
+    else if (target_R23 < -maxTiltAngle) {
+      target_R23 = -maxTiltAngle;
+    }
+
+
+    float rate_R13 = kpBank * (target_R13 - R(0, 2));
+    float rate_R23 = kpBank * (target_R23 - R(1, 2));
+
+    pqrCmd.x = ((R(1, 0) * rate_R13 - R(0, 0) * rate_R23) / R(2, 2));
+    pqrCmd.y = ((R(1, 1) * rate_R13 - R(0, 1) * rate_R23) / R(2, 2));
+    pqrCmd.z = 0.0f;
+  }
+  else
+  {
+    pqrCmd.x = 0.0;
+    pqrCmd.y = 0.0;
+    pqrCmd.z = 0.0;
+  }
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
@@ -186,9 +212,25 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   float thrust = 0;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  float errorZPos = posZCmd - posZ;
+  float errorZVel = velZCmd - velZ;
 
+  // Limit the ascent/ descent rate
+  float thrustAccelCmd = kpVelZ * errorZVel + kpPosZ * errorZPos + accelZCmd;
 
+  thrust = -(mass * thrustAccelCmd)/ R(2,2);
 
+  CONSTRAIN(thrust, -maxMotorThrust, maxMotorThrust);
+  
+  if (thrust < -maxMotorThrust)
+  {
+    thrust = -maxMotorThrust;
+  }
+  else if (thrust > maxMotorThrust)
+  {
+    thrust = maxMotorThrust;
+  }
+  printf("Thrust %f\n", thrust);
   /////////////////////////////// END STUDENT CODE ////////////////////////////
   
   return thrust;
@@ -224,11 +266,33 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   V3F accelCmd = accelCmdFF;
 
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  V3F errorPosXY = posCmd - pos;
+  V3F errorVelXY = velCmd - vel;
+  //printf("Error %f %f\n", errorPosXY.x, errorVelXY.x);
+  accelCmd.x += kpPosXY * errorPosXY.x + kpVelXY * errorVelXY.x;
+  accelCmd.y += kpPosXY * errorPosXY.y + kpVelXY * errorVelXY.y;
+  //printf("After %f\n", accelCmd.x);
 
+  CONSTRAIN(accelCmd.x, -maxAccelXY, maxAccelXY);
+  if (accelCmd.x < -maxAccelXY) {
+    accelCmd.x = -maxAccelXY;
+  }
+  else if (accelCmd.x > maxAccelXY) {
+    accelCmd.x = maxAccelXY;
+  }
+  CONSTRAIN(accelCmd.y, -maxAccelXY, maxAccelXY);
+  if (accelCmd.y < -maxAccelXY) {
+    accelCmd.y = -maxAccelXY;
+  }
+  else if (accelCmd.y > maxAccelXY) {
+    accelCmd.y = maxAccelXY;
+  }
+  accelCmd = -accelCmd;
   
+  //printf("VelX %f; velCmdY %f; %f (%f)\n", vel.x, vel.y, vel.z, -maxAccelXY);
+  printf("AccelX %f; AccelY %f; %f (%f)\n", accelCmd.x, accelCmd.y, accelCmd.z, -maxAccelXY);
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
-
   return accelCmd;
 }
 
@@ -247,7 +311,9 @@ float QuadControl::YawControl(float yawCmd, float yaw)
 
   float yawRateCmd=0;
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
+  float psi_error = yawCmd - yaw;
 
+  yawRateCmd = kpYaw * psi_error;
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
 
