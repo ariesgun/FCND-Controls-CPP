@@ -45,6 +45,8 @@ void QuadControl::Init()
 
   minMotorThrust = config->Get(_config + ".minMotorThrust", 0);
   maxMotorThrust = config->Get(_config + ".maxMotorThrust", 100);
+
+
 #else
   // load params from PX4 parameter system
   //TODO
@@ -78,7 +80,9 @@ VehicleCommand QuadControl::GenerateMotorCommands(float collThrustCmd, V3F momen
   cmd.desiredThrustsN[1] = (c_bar - p_bar + q_bar - r_bar) / (L * kappa * 4.0f); // front right
   cmd.desiredThrustsN[3] = (c_bar - p_bar - q_bar + r_bar) / (L * kappa * 4.0f); // rear left
   cmd.desiredThrustsN[2] = (c_bar + p_bar - q_bar - r_bar) / (L * kappa * 4.0f); // rear right
-  
+
+  //printf("Motor Commands %f %f %f %f\n", collThrustCmd, momentCmd.x, momentCmd.y, momentCmd.z);
+  //printf("Motor Commands cmd %f %f %f %f\n", cmd.desiredThrustsN[0], cmd.desiredThrustsN[1], cmd.desiredThrustsN[2], cmd.desiredThrustsN[3]);
   /*
   cmd.desiredThrustsN[0] = mass * 9.81f / 4.0f; // front left
   cmd.desiredThrustsN[1] = mass * 9.81f / 4.0f; // front right
@@ -150,7 +154,7 @@ V3F QuadControl::RollPitchControl(V3F accelCmd, Quaternion<float> attitude, floa
   float target_R13 = accelCmd.x / c_d;
   float target_R23 = accelCmd.y / c_d;
 
-  printf("Target R_13 %f %f\n", target_R13, target_R23);
+  //printf("Target R_13 %f %f\n", target_R13, target_R23);
 
   if (collThrustCmd > 0.0f)
   {
@@ -215,25 +219,20 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   float errorZPos = posZCmd - posZ;
   float errorZVel = velZCmd - velZ;
 
+  //printf("Error Z %f %f\n", errorZPos, posZCmd);
+
   // Limit the ascent/ descent rate
-  float thrustAccelCmd = kpVelZ * errorZVel + kpPosZ * errorZPos + accelZCmd;
+  integratedAltitudeError += errorZPos * dt;
+  float thrustAccelCmd = kpVelZ * errorZVel + kpPosZ * errorZPos + KiPosZ * integratedAltitudeError + accelZCmd;
 
-  thrust = -(mass * thrustAccelCmd)/ R(2,2);
+  thrust = -(mass * thrustAccelCmd) / R(2, 2);
 
-  CONSTRAIN(thrust, -maxMotorThrust, maxMotorThrust);
-  
-  if (thrust < -maxMotorThrust)
-  {
-    thrust = -maxMotorThrust;
-  }
-  else if (thrust > maxMotorThrust)
-  {
-    thrust = maxMotorThrust;
-  }
-  printf("Thrust %f\n", thrust);
+  thrust = CONSTRAIN(thrust, 0.0f, maxMotorThrust);
+
+  //printf("Thrust %f %f\n", thrust, thrustAccelCmd);
   /////////////////////////////// END STUDENT CODE ////////////////////////////
   
-  return thrust;
+  return thrust * 4.f;
 }
 
 // returns a desired acceleration in global frame
@@ -290,7 +289,7 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   accelCmd = -accelCmd;
   
   //printf("VelX %f; velCmdY %f; %f (%f)\n", vel.x, vel.y, vel.z, -maxAccelXY);
-  printf("AccelX %f; AccelY %f; %f (%f)\n", accelCmd.x, accelCmd.y, accelCmd.z, -maxAccelXY);
+  //printf("AccelX %f; AccelY %f; %f (%f)\n", accelCmd.x, accelCmd.y, accelCmd.z, -maxAccelXY);
 
   /////////////////////////////// END STUDENT CODE ////////////////////////////
   return accelCmd;
