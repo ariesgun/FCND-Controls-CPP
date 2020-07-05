@@ -56,6 +56,6 @@ KiPosZ = 20
 
 This scenario shows that the drone is able to better follow the trajectory when the velocity information is also included. 
 
-![Scenario 5(./animations/task_scenario5.gif)
+![Scenario 5](./animations/task_scenario5.gif)
 
 ---
