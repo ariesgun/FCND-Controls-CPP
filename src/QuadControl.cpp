@@ -271,20 +271,8 @@ V3F QuadControl::LateralPositionControl(V3F posCmd, V3F velCmd, V3F pos, V3F vel
   accelCmd.y += kpPosXY * errorPosXY.y + kpVelXY * errorVelXY.y;
   //printf("After %f\n", accelCmd.x);
 
-  CONSTRAIN(accelCmd.x, -maxAccelXY, maxAccelXY);
-  if (accelCmd.x < -maxAccelXY) {
-    accelCmd.x = -maxAccelXY;
-  }
-  else if (accelCmd.x > maxAccelXY) {
-    accelCmd.x = maxAccelXY;
-  }
-  CONSTRAIN(accelCmd.y, -maxAccelXY, maxAccelXY);
-  if (accelCmd.y < -maxAccelXY) {
-    accelCmd.y = -maxAccelXY;
-  }
-  else if (accelCmd.y > maxAccelXY) {
-    accelCmd.y = maxAccelXY;
-  }
+  accelCmd.x = CONSTRAIN(accelCmd.x, -maxAccelXY, maxAccelXY);
+  accelCmd.y = CONSTRAIN(accelCmd.y, -maxAccelXY, maxAccelXY);
   accelCmd = -accelCmd;
   
   //printf("VelX %f; velCmdY %f; %f (%f)\n", vel.x, vel.y, vel.z, -maxAccelXY);
@@ -310,6 +298,12 @@ float QuadControl::YawControl(float yawCmd, float yaw)
   float yawRateCmd=0;
   ////////////////////////////// BEGIN STUDENT CODE ///////////////////////////
   float psi_error = yawCmd - yaw;
+  if (psi_error > F_PI) {
+    psi_error -= 2 * F_PI;
+  }
+  else if (psi_error < -F_PI) {
+    psi_error += 2 * F_PI;
+  }
 
   yawRateCmd = kpYaw * psi_error;
 

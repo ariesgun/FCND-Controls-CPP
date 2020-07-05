@@ -33,7 +33,7 @@ Here are the values of `kpPosZ`, `pVelZ`, `kpPosXY`, `kpVelXY`.
 ```
 # Position control gains
 kpPosXY = 30
-kpPosZ = 80
+kpPosZ = 100
 
 # Velocity control gains
 kpVelXY = 12
@@ -47,7 +47,7 @@ kpVelZ = 30
 The `AltitudeControl()` function is updated so that it becomes a PID controller.
 Here is the value of Ki value:
 ```
-KiPosZ = 20
+KiPosZ = 40
 ```
 
 ![Scenario 4](./animations/task_scenario4.gif)
