@@ -225,14 +225,13 @@ float QuadControl::AltitudeControl(float posZCmd, float velZCmd, float posZ, flo
   integratedAltitudeError += errorZPos * dt;
   float thrustAccelCmd = kpVelZ * errorZVel + kpPosZ * errorZPos + KiPosZ * integratedAltitudeError + accelZCmd;
 
-  thrust = -(mass * thrustAccelCmd) / R(2, 2);
-
-  thrust = CONSTRAIN(thrust, 0.0f, maxMotorThrust);
+  float acc = (thrustAccelCmd - CONST_GRAVITY) / R(2, 2);
+  thrust = -mass * CONSTRAIN(acc, -maxAscentRate / dt, maxAscentRate / dt);
 
   //printf("Thrust %f %f\n", thrust, thrustAccelCmd);
   /////////////////////////////// END STUDENT CODE ////////////////////////////
   
-  return thrust * 4.f;
+  return thrust;
 }
 
 // returns a desired acceleration in global frame
